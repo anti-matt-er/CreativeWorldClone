@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "creative-world-clone",
+  "version": "${version}",
+  "name": "CreativeWorldClone",
+  "description": "",
+  "authors": [],
+  "contact": {
+    "repo": "https://github.com/anti-matt-er/CreativeWorldClone"
+  },
+  "license": "MIT",
+  "icon": "assets/creative-world-clone/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "github.antimatter.creativeworldclone.client.CreativeWorldCloneClient"
+    ],
+    "main": [
+      "github.antimatter.creativeworldclone.CreativeWorldClone"
+    ]
+  },
+  "mixins": [
+    "creative-world-clone.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
