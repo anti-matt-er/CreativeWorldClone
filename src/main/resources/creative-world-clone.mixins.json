@@ -6,6 +6,8 @@
   "mixins": [
   ],
   "client": [
+    "EditWorldScreenMixin",
+    "LevelStorageSessionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

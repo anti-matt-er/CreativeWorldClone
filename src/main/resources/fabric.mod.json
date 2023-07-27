@@ -12,9 +12,6 @@
   "icon": "assets/creative-world-clone/icon.png",
   "environment": "client",
   "entrypoints": {
-    "client": [
-      "github.antimatter.creativeworldclone.client.CreativeWorldCloneClient"
-    ],
     "main": [
       "github.antimatter.creativeworldclone.CreativeWorldClone"
     ]
