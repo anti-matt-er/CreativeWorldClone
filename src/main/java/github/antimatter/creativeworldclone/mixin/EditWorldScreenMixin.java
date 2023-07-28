@@ -22,6 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.io.IOException;
 
+import static github.antimatter.creativeworldclone.CreativeWorldClone.SUFFIX;
+
 @Mixin(EditWorldScreen.class)
 public abstract class EditWorldScreenMixin extends Screen {
     @Unique
@@ -50,7 +52,7 @@ public abstract class EditWorldScreenMixin extends Screen {
 
     @Unique
     private void cloneWorld(LevelStorage.Session storageSession) {
-        String creativeName = storageSession.getDirectoryName() + " [CREATIVE]";
+        String creativeName = storageSession.getDirectoryName() + SUFFIX;
 
         assert client != null;
 

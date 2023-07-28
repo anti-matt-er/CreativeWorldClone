@@ -6,6 +6,13 @@
   "mixins": [
   ],
   "client": [
+    "PlaceBlockMixin",
+    "BreakBlockMixin",
+    "ItemFrameEntityMixin",
+    "PaintingEntityMixin",
+    "LeashKnotEntityMixin",
+    "ArmorStandEntityMixin",
+    "EntityMixin",
     "EditWorldScreenMixin",
     "LevelStorageSessionMixin"
   ],
