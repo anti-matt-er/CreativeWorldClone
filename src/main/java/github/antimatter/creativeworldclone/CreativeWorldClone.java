@@ -27,14 +27,12 @@ public class CreativeWorldClone implements ModInitializer {
     public static void onWorldLoad() {
         if (isLitematicaLoaded()) {
             String levelName = Objects.requireNonNull(MinecraftClient.getInstance().getServer()).getSaveProperties().getLevelName();
-            LOGGER.info("Litematica manager loaded for save \"{}\"!", levelName);
             SchematicManager.loadWorld(levelName);
         }
     }
 
     public static void onWorldLeave() {
         if (isLitematicaLoaded()) {
-            LOGGER.info("Litematica manager unloaded!");
             SchematicManager.close();
         }
     }

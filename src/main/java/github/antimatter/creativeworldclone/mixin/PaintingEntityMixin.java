@@ -18,11 +18,11 @@ public abstract class PaintingEntityMixin extends Entity {
 
     @Inject(method = "onBreak", at = @At("HEAD"))
     private void onBreak(Entity entity, CallbackInfo ci) {
-        SchematicManager.getInstance().onBreak(this.getBlockPos(), "Painting");
+        SchematicManager.onBreak(this.getBlockPos(), "Painting");
     }
 
     @Inject(method = "onPlace", at = @At("HEAD"))
     private void onPlace(CallbackInfo ci) {
-        SchematicManager.getInstance().onPlace(this.getBlockPos(), "Painting");
+        SchematicManager.onPlace(this.getBlockPos(), "Painting");
     }
 }

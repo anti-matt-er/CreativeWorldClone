@@ -24,6 +24,6 @@ public abstract class BreakBlockMixin {
         ClientWorld world = this.client.world;
         assert world != null;
         BlockState blockState = world.getBlockState(pos);
-        SchematicManager.getInstance().onBreak(pos, String.valueOf(blockState.getBlock()));
+        SchematicManager.onBreak(pos, String.valueOf(blockState.getBlock()));
     }
 }

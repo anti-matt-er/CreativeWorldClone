@@ -15,6 +15,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.PathUtil;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +35,7 @@ public class SchematicManager {
     private static final SchematicProjectsManager projectsManager = DataManager.getSchematicProjectsManager();
     private static final SchematicHolder schematicHolder = SchematicHolder.getInstance();
     private static final SelectionManager selectionManager = DataManager.getSelectionManager();
+    @Nullable
     private static SchematicManager instance;
     private Boolean worldLoaded;
     private String name;
@@ -52,11 +54,17 @@ public class SchematicManager {
         return instance;
     }
 
+    private static boolean isUnloaded() {
+        return instance == null || !instance.worldLoaded;
+    }
+
     public static void loadWorld(String worldName) {
-        getInstance();
+        instance = getInstance();
         instance.name = StringUtils.removeSuffix(worldName, CreativeWorldClone.SUFFIX);
         instance.createOrLoadProject();
         instance.worldLoaded = true;
+
+        LOGGER.info("SchematicManager loaded for world \"{}\"", worldName);
     }
 
     private void createProjectDir() {
@@ -133,15 +141,16 @@ public class SchematicManager {
     }
 
     public static void close() {
+        if (isUnloaded())
+            return;
+
         instance.persist();
         instance.worldLoaded = false;
         instance = null;
+        LOGGER.info("SchematicManager unloaded");
     }
 
     private void onBlockChange(BlockPos blockPos) {
-        if (!this.worldLoaded)
-            return;
-
         if (this.minCorner == null)
             this.minCorner = blockPos;
         if (this.maxCorner == null)
@@ -164,13 +173,19 @@ public class SchematicManager {
         // update the creative clone from the survival world while optionally keeping old creative changes.
     }
 
-    public void onPlace(BlockPos blockPos, String which) {
+    public static void onPlace(BlockPos blockPos, String which) {
+        if (isUnloaded())
+            return;
+
         LOGGER.info("{} placed at {}, {}, {}", which, blockPos.getX(), blockPos.getY(), blockPos.getZ());
-        this.onBlockChange(blockPos);
+        instance.onBlockChange(blockPos);
     }
 
-    public void onBreak(BlockPos blockPos, String which) {
+    public static void onBreak(BlockPos blockPos, String which) {
+        if (isUnloaded())
+            return;
+
         LOGGER.info("{} break at {}, {}, {}", which, blockPos.getX(), blockPos.getY(), blockPos.getZ());
-        this.onBlockChange(blockPos);
+        instance.onBlockChange(blockPos);
     }
 }
