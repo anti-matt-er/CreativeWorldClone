@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Unique;
 import java.util.Objects;
 
 public class CreativeWorldClone implements ModInitializer {
-
+    //TODO: Run a code formatter over everything!
     private static final Logger LOGGER = LoggerFactory.getLogger("creative-world-clone");
     public static final String SUFFIX = " [CREATIVE]";
     public static SchematicManager schematicManager;

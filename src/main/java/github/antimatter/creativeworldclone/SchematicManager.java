@@ -122,6 +122,7 @@ public class SchematicManager {
     }
 
     private String normalizeName(String name) {
+        //TODO: Move to a new utility class
         if (name.endsWith(CreativeWorldClone.SUFFIX)) {
             name = name.substring(0, name.length() - CreativeWorldClone.SUFFIX.length());
         }
@@ -142,6 +143,12 @@ public class SchematicManager {
         this.area.setOriginSelected(true);
 
         this.save(false);
+
+        //TODO: Instead of manually setting corners, use Litematica's SchematicVerifier class with using the survival
+        // world as a base schematic to assess block changes. This would ensure the working area doesn't include
+        // unnecessary changes, such as placing and removing a block where it would be outside the area.
+        // Use the corners instead to limit the range of the verifier. Another advantage of this is to be able to easily
+        // update the creative clone from the survival world while optionally keeping old creative changes.
     }
 
     public static void onPlace(BlockPos blockPos, String which) {

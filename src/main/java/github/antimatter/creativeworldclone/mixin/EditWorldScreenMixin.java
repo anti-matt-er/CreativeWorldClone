@@ -52,6 +52,7 @@ public abstract class EditWorldScreenMixin extends Screen {
 
     @Unique
     private void cloneWorld(LevelStorage.Session storageSession) {
+        //TODO: Refactor this. One method for cloning, one for setting modes/data, etc. Also move outside this class.
         String creativeName = storageSession.getDirectoryName() + SUFFIX;
 
         assert client != null;
