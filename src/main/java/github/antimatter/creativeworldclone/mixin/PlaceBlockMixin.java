@@ -13,11 +13,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(BlockItem.class)
 public abstract class PlaceBlockMixin {
-
-    @Shadow public abstract Block getBlock();
+    @Shadow
+    public abstract Block getBlock();
 
     @Inject(method = "place(Lnet/minecraft/item/ItemPlacementContext;Lnet/minecraft/block/BlockState;)Z", at = @At("HEAD"))
     private void place(ItemPlacementContext context, BlockState state, CallbackInfoReturnable<Boolean> cir) {
-        SchematicManager.onPlace(context.getBlockPos(), String.valueOf(this.getBlock()));
+        SchematicManager.getInstance().onPlace(context.getBlockPos(), String.valueOf(this.getBlock()));
     }
 }

@@ -12,18 +12,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(PaintingEntity.class)
 public abstract class PaintingEntityMixin extends Entity {
-
     private PaintingEntityMixin(EntityType<?> type, World world) {
         super(type, world);
     }
 
     @Inject(method = "onBreak", at = @At("HEAD"))
     private void onBreak(Entity entity, CallbackInfo ci) {
-        SchematicManager.onBreak(this.getBlockPos(), "Painting");
+        SchematicManager.getInstance().onBreak(this.getBlockPos(), "Painting");
     }
 
     @Inject(method = "onPlace", at = @At("HEAD"))
     private void onPlace(CallbackInfo ci) {
-        SchematicManager.onPlace(this.getBlockPos(), "Painting");
+        SchematicManager.getInstance().onPlace(this.getBlockPos(), "Painting");
     }
 }

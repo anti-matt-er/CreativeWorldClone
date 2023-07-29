@@ -7,7 +7,7 @@ version = project.mod_version
 group = project.maven_group
 
 repositories {
-    maven { url 'https://masa.dy.fi/maven' }
+    maven { url = "https://masa.dy.fi/maven" }
     maven { url = "https://www.cursemaven.com" }
 }
 
@@ -64,7 +64,7 @@ java {
 
 jar {
     from("LICENSE") {
-        rename { "${it}_${project.archivesBaseName}"}
+        rename { "${it}_${project.archivesBaseName}" }
     }
 }
 

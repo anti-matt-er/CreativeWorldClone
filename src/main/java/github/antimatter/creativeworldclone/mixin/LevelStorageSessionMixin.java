@@ -15,16 +15,15 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 @Mixin(LevelStorage.Session.class)
 public abstract class LevelStorageSessionMixin implements ILevelStorageSessionMixinCloneable {
-
-    @Shadow @Final
+    @Shadow
+    @Final
     LevelStorage.LevelSave directory;
+
     @Shadow
     protected abstract void checkValid();
 
-
     @Override
-    public void creativeWorldClone$cloneLevel(String targetDir)
-            throws IOException {
+    public void creativeWorldClone$cloneLevel(String targetDir) throws IOException {
         this.checkValid();
 
         Path source = this.directory.path();
@@ -38,15 +37,13 @@ public abstract class LevelStorageSessionMixin implements ILevelStorageSessionMi
 
         Files.walkFileTree(source, new SimpleFileVisitor<>() {
             @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                    throws IOException {
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 Files.createDirectories(target.resolve(source.relativize(dir).toString()));
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                    throws IOException {
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 if (file.endsWith("session.lock")) {
                     return FileVisitResult.CONTINUE;
                 }

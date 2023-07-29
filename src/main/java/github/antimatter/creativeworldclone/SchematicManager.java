@@ -26,30 +26,24 @@ import java.util.Objects;
 
 public class SchematicManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("creative-world-clone");
+    private static final String AREA_NAME = "Working Area";
     private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
     @NotNull
-    private static final PlayerEntity PLAYER;
+    private static final PlayerEntity PLAYER = Objects.requireNonNull(CLIENT.player);
+    private static final File SCHEMATICS_DIR = new File(CLIENT.runDirectory, "schematics/CreativeWorldClone/");
     private static final LitematicaSchematic.SchematicSaveInfo SAVE_INFO = new LitematicaSchematic.SchematicSaveInfo(false, false);
     private static final IStringConsumer LOG_STRING_CONSUMER = string -> LOGGER.info("Litematica createFromWorld feedback: \"{}\"", string);
-
-    static {
-        assert CLIENT.player != null;
-        PLAYER = CLIENT.player;
-    }
-    private static final String AREA_NAME = "Working Area";
     private static SchematicManager instance;
     private static SchematicProjectsManager projectsManager;
-
-    private static final File SCHEMATICS_DIR = new File(CLIENT.runDirectory, "schematics/CreativeWorldClone/");
-
-    private String name;
+    private final String name;
     private LitematicaSchematic schematic;
-    private AreaSelection area;
+    private final AreaSelection area;
     private BlockPos minCorner;
     private BlockPos maxCorner;
 
     public SchematicManager(String worldName) {
-        if (instance != null) return;
+        if (instance != null)
+            this.close();
 
         this.name = this.normalizeName(worldName);
         String areaID = FileUtils.generateSafeFileName(this.name + "_" + AREA_NAME);
@@ -67,11 +61,11 @@ public class SchematicManager {
         }
 
         SchematicProject project = projectsManager.loadProjectFromFile(new File(SCHEMATICS_DIR, this.name + ".json"), true);
-        if (project == null) {
+        if (project == null)
             projectsManager.createNewProject(SCHEMATICS_DIR, this.name);
-        }
 
-        if (selectionManager.getSelectionMode() == SelectionMode.SIMPLE) selectionManager.switchSelectionMode();
+        if (selectionManager.getSelectionMode() == SelectionMode.SIMPLE)
+            selectionManager.switchSelectionMode();
         String selectionID = new File(SCHEMATICS_DIR, areaID + ".json").getAbsolutePath();
         boolean loaded = (schematicFile.exists() && schematicFile.isFile() && schematicFile.canRead());
         if (loaded) {
@@ -86,14 +80,8 @@ public class SchematicManager {
         if (loaded) {
             Box areaBox = this.area.getSelectedSubRegionBox();
             assert areaBox != null;
-            this.minCorner = PositionUtils.getMinCorner(
-                    areaBox.getPosition(PositionUtils.Corner.CORNER_1),
-                    areaBox.getPosition(PositionUtils.Corner.CORNER_2)
-            );
-            this.maxCorner = PositionUtils.getMaxCorner(
-                    areaBox.getPosition(PositionUtils.Corner.CORNER_1),
-                    areaBox.getPosition(PositionUtils.Corner.CORNER_2)
-            );
+            this.minCorner = PositionUtils.getMinCorner(areaBox.getPosition(PositionUtils.Corner.CORNER_1), areaBox.getPosition(PositionUtils.Corner.CORNER_2));
+            this.maxCorner = PositionUtils.getMaxCorner(areaBox.getPosition(PositionUtils.Corner.CORNER_1), areaBox.getPosition(PositionUtils.Corner.CORNER_2));
             LOGGER.info("Loaded area \"{}\"", selectionID);
         } else {
             LOGGER.info("Created new area \"{}\"", selectionID);
@@ -101,6 +89,10 @@ public class SchematicManager {
         this.save(false);
 
         instance = this;
+    }
+
+    public static SchematicManager getInstance() {
+        return instance;
     }
 
     public void save(boolean forceSave) {
@@ -116,23 +108,24 @@ public class SchematicManager {
         this.schematic.writeToFile(SCHEMATICS_DIR, this.name, true);
     }
 
-    public static void close() {
-        instance.persist();
+    public void close() {
+        this.persist();
         instance = null;
     }
 
     private String normalizeName(String name) {
         //TODO: Move to a new utility class
-        if (name.endsWith(CreativeWorldClone.SUFFIX)) {
+        if (name.endsWith(CreativeWorldClone.SUFFIX))
             name = name.substring(0, name.length() - CreativeWorldClone.SUFFIX.length());
-        }
 
         return name;
     }
 
     private void onBlockChange(BlockPos blockPos) {
-        if (this.minCorner == null) this.minCorner = blockPos;
-        if (this.maxCorner == null) this.maxCorner = blockPos;
+        if (this.minCorner == null)
+            this.minCorner = blockPos;
+        if (this.maxCorner == null)
+            this.maxCorner = blockPos;
         BlockPos newMin = PositionUtils.getMinCorner(this.minCorner, blockPos);
         BlockPos newMax = PositionUtils.getMaxCorner(this.maxCorner, blockPos);
         this.area.setSelectedSubRegionCornerPos(newMin, PositionUtils.Corner.CORNER_1);
@@ -151,15 +144,13 @@ public class SchematicManager {
         // update the creative clone from the survival world while optionally keeping old creative changes.
     }
 
-    public static void onPlace(BlockPos blockPos, String which) {
-        if (instance == null) return;
+    public void onPlace(BlockPos blockPos, String which) {
         LOGGER.info("{} placed at {}, {}, {}", which, blockPos.getX(), blockPos.getY(), blockPos.getZ());
-        instance.onBlockChange(blockPos);
+        this.onBlockChange(blockPos);
     }
 
-    public static void onBreak(BlockPos blockPos, String which) {
-        if (instance == null) return;
+    public void onBreak(BlockPos blockPos, String which) {
         LOGGER.info("{} break at {}, {}, {}", which, blockPos.getX(), blockPos.getY(), blockPos.getZ());
-        instance.onBlockChange(blockPos);
+        this.onBlockChange(blockPos);
     }
 }

@@ -12,14 +12,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ArmorStandEntity.class)
 public abstract class ArmorStandEntityMixin extends Entity {
-
     public ArmorStandEntityMixin(EntityType<?> type, World world) {
         super(type, world);
     }
 
     @Inject(method = "kill", at = @At("HEAD"))
     private void onBreak(CallbackInfo ci) {
-        SchematicManager.onBreak(this.getBlockPos(), "Armor Stand");
+        SchematicManager.getInstance().onBreak(this.getBlockPos(), "Armor Stand");
     }
 }
 

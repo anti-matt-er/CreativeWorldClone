@@ -28,9 +28,12 @@ import static github.antimatter.creativeworldclone.CreativeWorldClone.SUFFIX;
 public abstract class EditWorldScreenMixin extends Screen {
     @Unique
     private static final Logger LOGGER = LoggerFactory.getLogger("creative-world-clone");
-
-    @Shadow @Final private LevelStorage.Session storageSession;
-    @Shadow @Final private BooleanConsumer callback;
+    @Shadow
+    @Final
+    private LevelStorage.Session storageSession;
+    @Shadow
+    @Final
+    private BooleanConsumer callback;
 
     protected EditWorldScreenMixin(Text title) {
         super(title);
@@ -38,16 +41,7 @@ public abstract class EditWorldScreenMixin extends Screen {
 
     @Inject(at = @At("RETURN"), method = "init")
     private void addCloneButton(CallbackInfo ci) {
-        this.addDrawableChild(
-                        ButtonWidget.builder(Text.of("Clone World in Creative!"),
-                        button -> this.cloneWorld(this.storageSession)).dimensions(
-                                this.width / 2 - 100,
-                                this.height / 4 + 120 + 5,
-                                200,
-                                20
-                        ).build()
-        );
-
+        this.addDrawableChild(ButtonWidget.builder(Text.of("Clone World in Creative!"), button -> this.cloneWorld(this.storageSession)).dimensions(this.width / 2 - 100, this.height / 4 + 120 + 5, 200, 20).build());
     }
 
     @Unique
@@ -60,12 +54,10 @@ public abstract class EditWorldScreenMixin extends Screen {
         try {
             ((ILevelStorageSessionMixinCloneable) storageSession).creativeWorldClone$cloneLevel(creativeName);
             storageSession.close();
-
             LevelStorage.Session creativeStorageSession = this.client.getLevelStorage().createSession(creativeName);
             creativeStorageSession.save(creativeName);
             ((ILevelStorageSessionMixinCloneable) creativeStorageSession).creativeWorldClone$setGameMode(1);
             creativeStorageSession.close();
-
             this.callback.accept(true);
         } catch (IOException e) {
             LOGGER.error("Failed to access world '{}'", storageSession.getDirectoryName(), e);

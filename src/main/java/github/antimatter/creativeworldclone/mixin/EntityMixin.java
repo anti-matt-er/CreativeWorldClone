@@ -14,7 +14,7 @@ public abstract class EntityMixin {
     @Inject(method = "spawnEntity", at = @At("HEAD"))
     private void onPlace(Entity entity, CallbackInfoReturnable<Boolean> cir) {
         if (entity.getType() == EntityType.ARMOR_STAND) {
-            SchematicManager.onPlace(entity.getBlockPos(), "Armor Stand");
+            SchematicManager.getInstance().onPlace(entity.getBlockPos(), "Armor Stand");
         }
     }
 }
