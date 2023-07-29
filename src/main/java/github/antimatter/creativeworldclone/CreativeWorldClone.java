@@ -13,7 +13,6 @@ public class CreativeWorldClone implements ModInitializer {
     //TODO: Run a code formatter over everything!
     private static final Logger LOGGER = LoggerFactory.getLogger("creative-world-clone");
     public static final String SUFFIX = " [CREATIVE]";
-    public static SchematicManager schematicManager;
 
     @Override
     public void onInitialize() {
@@ -29,14 +28,14 @@ public class CreativeWorldClone implements ModInitializer {
         if (isLitematicaLoaded()) {
             String levelName = Objects.requireNonNull(MinecraftClient.getInstance().getServer()).getSaveProperties().getLevelName();
             LOGGER.info("Litematica manager loaded for save \"{}\"!", levelName);
-            new SchematicManager(levelName);
+            SchematicManager.loadWorld(levelName);
         }
     }
 
     public static void onWorldLeave() {
         if (isLitematicaLoaded()) {
             LOGGER.info("Litematica manager unloaded!");
-            SchematicManager.getInstance().close();
+            SchematicManager.close();
         }
     }
 }

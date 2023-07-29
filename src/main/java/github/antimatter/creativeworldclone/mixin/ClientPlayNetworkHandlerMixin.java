@@ -2,7 +2,6 @@ package github.antimatter.creativeworldclone.mixin;
 
 import github.antimatter.creativeworldclone.CreativeWorldClone;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.s2c.play.DisconnectS2CPacket;
 import net.minecraft.network.packet.s2c.play.GameJoinS2CPacket;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

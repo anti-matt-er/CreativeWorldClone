@@ -3,7 +3,6 @@ package github.antimatter.creativeworldclone;
 import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.data.SchematicHolder;
 import fi.dy.masa.litematica.schematic.LitematicaSchematic;
-import fi.dy.masa.litematica.schematic.projects.SchematicProject;
 import fi.dy.masa.litematica.schematic.projects.SchematicProjectsManager;
 import fi.dy.masa.litematica.selection.AreaSelection;
 import fi.dy.masa.litematica.selection.Box;
@@ -11,7 +10,6 @@ import fi.dy.masa.litematica.selection.SelectionManager;
 import fi.dy.masa.litematica.selection.SelectionMode;
 import fi.dy.masa.litematica.util.PositionUtils;
 import fi.dy.masa.malilib.interfaces.IStringConsumer;
-import fi.dy.masa.malilib.util.FileUtils;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.PathUtil;
@@ -30,54 +28,80 @@ public class SchematicManager {
     private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
     @NotNull
     private static final PlayerEntity PLAYER = Objects.requireNonNull(CLIENT.player);
-    private static final File SCHEMATICS_DIR = new File(CLIENT.runDirectory, "schematics/CreativeWorldClone/");
+    private static final File PROJECT_DIR = new File(CLIENT.runDirectory, "schematics/CreativeWorldClone/");
     private static final LitematicaSchematic.SchematicSaveInfo SAVE_INFO = new LitematicaSchematic.SchematicSaveInfo(false, false);
     private static final IStringConsumer LOG_STRING_CONSUMER = string -> LOGGER.info("Litematica createFromWorld feedback: \"{}\"", string);
+    private static final SchematicProjectsManager projectsManager = DataManager.getSchematicProjectsManager();
+    private static final SchematicHolder schematicHolder = SchematicHolder.getInstance();
+    private static final SelectionManager selectionManager = DataManager.getSelectionManager();
     private static SchematicManager instance;
-    private static SchematicProjectsManager projectsManager;
-    private final String name;
+    private Boolean worldLoaded;
+    private String name;
     private LitematicaSchematic schematic;
-    private final AreaSelection area;
+    private AreaSelection area;
     private BlockPos minCorner;
     private BlockPos maxCorner;
 
-    public SchematicManager(String worldName) {
-        if (instance != null)
-            this.close();
+    private SchematicManager() {
+    }
 
-        this.name = this.normalizeName(worldName);
-        String areaID = FileUtils.generateSafeFileName(this.name + "_" + AREA_NAME);
+    public static SchematicManager getInstance() {
+        if (instance == null)
+            instance = new SchematicManager();
 
-        File schematicFile = new File(SCHEMATICS_DIR, this.name + ".litematic");
+        return instance;
+    }
 
-        DataManager.load();
-        SelectionManager selectionManager = DataManager.getSelectionManager();
-        projectsManager = DataManager.getSchematicProjectsManager();
+    public static void loadWorld(String worldName) {
+        getInstance();
+        instance.name = StringUtils.removeSuffix(worldName, CreativeWorldClone.SUFFIX);
+        instance.createOrLoadProject();
+        instance.worldLoaded = true;
+    }
 
+    private void createProjectDir() {
         try {
-            PathUtil.createDirectories(SCHEMATICS_DIR.toPath());
+            PathUtil.createDirectories(PROJECT_DIR.toPath());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
 
-        SchematicProject project = projectsManager.loadProjectFromFile(new File(SCHEMATICS_DIR, this.name + ".json"), true);
-        if (project == null)
-            projectsManager.createNewProject(SCHEMATICS_DIR, this.name);
-
-        if (selectionManager.getSelectionMode() == SelectionMode.SIMPLE)
+    // Warning suppressed as we may want to be able to change to other modes down the line
+    private void setSelectionMode(@SuppressWarnings("SameParameterValue") SelectionMode mode) {
+        if (selectionManager.getSelectionMode() != mode)
             selectionManager.switchSelectionMode();
-        String selectionID = new File(SCHEMATICS_DIR, areaID + ".json").getAbsolutePath();
-        boolean loaded = (schematicFile.exists() && schematicFile.isFile() && schematicFile.canRead());
-        if (loaded) {
-            this.schematic = LitematicaSchematic.createFromFile(SCHEMATICS_DIR, this.name);
-            SchematicHolder.getInstance().addSchematic(this.schematic, false);
-        } else {
-            selectionManager.createNewSelection(SCHEMATICS_DIR, areaID);
+    }
+
+    private boolean tryLoadProject() {
+        this.createProjectDir();
+        if (projectsManager.loadProjectFromFile(new File(PROJECT_DIR, this.name + ".json"), true) == null) {
+            projectsManager.createNewProject(PROJECT_DIR, this.name);
+
+            return false;
         }
+
+        return true;
+    }
+
+    private void createOrLoadWorkingArea(boolean shouldLoad) {
+        this.setSelectionMode(SelectionMode.NORMAL);
+
+        String areaID = StringUtils.normalize(this.name + "_" + AREA_NAME);
+        String selectionID = new File(PROJECT_DIR, areaID + ".json").getAbsolutePath();
+
+        if (shouldLoad) {
+            this.schematic = LitematicaSchematic.createFromFile(PROJECT_DIR, this.name);
+            schematicHolder.addSchematic(this.schematic, false);
+        } else {
+            selectionManager.createNewSelection(PROJECT_DIR, areaID);
+        }
+
         this.area = selectionManager.getOrLoadSelection(selectionID);
         Objects.requireNonNull(this.area).setName(AREA_NAME);
         selectionManager.setCurrentSelection(selectionID);
-        if (loaded) {
+
+        if (shouldLoad) {
             Box areaBox = this.area.getSelectedSubRegionBox();
             assert areaBox != null;
             this.minCorner = PositionUtils.getMinCorner(areaBox.getPosition(PositionUtils.Corner.CORNER_1), areaBox.getPosition(PositionUtils.Corner.CORNER_2));
@@ -86,42 +110,38 @@ public class SchematicManager {
         } else {
             LOGGER.info("Created new area \"{}\"", selectionID);
         }
-        this.save(false);
-
-        instance = this;
     }
 
-    public static SchematicManager getInstance() {
-        return instance;
+    private void createOrLoadProject() {
+        boolean loaded = tryLoadProject();
+        DataManager.load();
+        this.createOrLoadWorkingArea(loaded);
+        this.save(false);
     }
 
     public void save(boolean forceSave) {
         this.schematic = LitematicaSchematic.createFromWorld(MinecraftClient.getInstance().world, this.area, SAVE_INFO, PLAYER.getDisplayName().getString(), LOG_STRING_CONSUMER);
-        SchematicHolder.getInstance().clearLoadedSchematics();
-        SchematicHolder.getInstance().addSchematic(this.schematic, false);
+        schematicHolder.clearLoadedSchematics();
+        schematicHolder.addSchematic(this.schematic, false);
         DataManager.save(forceSave);
         projectsManager.saveCurrentProject();
     }
 
     private void persist() {
         this.save(true);
-        this.schematic.writeToFile(SCHEMATICS_DIR, this.name, true);
+        this.schematic.writeToFile(PROJECT_DIR, this.name, true);
     }
 
-    public void close() {
-        this.persist();
+    public static void close() {
+        instance.persist();
+        instance.worldLoaded = false;
         instance = null;
     }
 
-    private String normalizeName(String name) {
-        //TODO: Move to a new utility class
-        if (name.endsWith(CreativeWorldClone.SUFFIX))
-            name = name.substring(0, name.length() - CreativeWorldClone.SUFFIX.length());
-
-        return name;
-    }
-
     private void onBlockChange(BlockPos blockPos) {
+        if (!this.worldLoaded)
+            return;
+
         if (this.minCorner == null)
             this.minCorner = blockPos;
         if (this.maxCorner == null)
