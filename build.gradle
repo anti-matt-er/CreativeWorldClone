@@ -7,6 +7,7 @@ version = project.mod_version
 group = project.maven_group
 
 repositories {
+    maven { url 'https://masa.dy.fi/maven' }
     maven { url = "https://www.cursemaven.com" }
 }
 
@@ -20,6 +21,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // Optional dependency on Litematica (version fabric-1.20.1-0.15.3)
+    modCompileOnly "fi.dy.masa.malilib:malilib-fabric-${project.minecraft_version_out}:${project.malilib_version}"
     modCompileOnly "curse.maven:litematica-308892:4626718"
 }
 

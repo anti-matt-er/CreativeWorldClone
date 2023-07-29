@@ -19,11 +19,11 @@ public abstract class ItemFrameEntityMixin extends Entity {
 
     @Inject(method = "onBreak", at = @At("HEAD"))
     private void onBreak(Entity entity, CallbackInfo ci) {
-        SchematicManager.OnBreak(this.getBlockPos(), "Item Frame");
+        SchematicManager.onBreak(this.getBlockPos(), "Item Frame");
     }
 
     @Inject(method = "onPlace", at = @At("HEAD"))
     private void onPlace(CallbackInfo ci) {
-        SchematicManager.OnPlace(this.getBlockPos(), "Item Frame");
+        SchematicManager.onPlace(this.getBlockPos(), "Item Frame");
     }
 }

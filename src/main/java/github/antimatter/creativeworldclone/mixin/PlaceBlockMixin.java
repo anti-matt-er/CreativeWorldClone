@@ -18,6 +18,6 @@ public abstract class PlaceBlockMixin {
 
     @Inject(method = "place(Lnet/minecraft/item/ItemPlacementContext;Lnet/minecraft/block/BlockState;)Z", at = @At("HEAD"))
     private void place(ItemPlacementContext context, BlockState state, CallbackInfoReturnable<Boolean> cir) {
-        SchematicManager.OnPlace(context.getBlockPos(), String.valueOf(this.getBlock()));
+        SchematicManager.onPlace(context.getBlockPos(), String.valueOf(this.getBlock()));
     }
 }

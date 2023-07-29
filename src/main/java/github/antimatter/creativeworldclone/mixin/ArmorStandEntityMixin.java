@@ -19,7 +19,7 @@ public abstract class ArmorStandEntityMixin extends Entity {
 
     @Inject(method = "kill", at = @At("HEAD"))
     private void onBreak(CallbackInfo ci) {
-        SchematicManager.OnBreak(this.getBlockPos(), "Armor Stand");
+        SchematicManager.onBreak(this.getBlockPos(), "Armor Stand");
     }
 }
 

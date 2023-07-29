@@ -19,11 +19,11 @@ public abstract class LeashKnotEntityMixin extends Entity {
 
     @Inject(method = "onBreak", at = @At("HEAD"))
     private void onBreak(Entity entity, CallbackInfo ci) {
-        SchematicManager.OnBreak(this.getBlockPos(), "Leash Knot");
+        SchematicManager.onBreak(this.getBlockPos(), "Leash Knot");
     }
 
     @Inject(method = "onPlace", at = @At("HEAD"))
     private void onPlace(CallbackInfo ci) {
-        SchematicManager.OnPlace(this.getBlockPos(), "Leash Knot");
+        SchematicManager.onPlace(this.getBlockPos(), "Leash Knot");
     }
 }

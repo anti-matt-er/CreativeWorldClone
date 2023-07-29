@@ -13,6 +13,8 @@
     "LeashKnotEntityMixin",
     "ArmorStandEntityMixin",
     "EntityMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "ServerPlayNetworkHandlerMixin",
     "EditWorldScreenMixin",
     "LevelStorageSessionMixin"
   ],
