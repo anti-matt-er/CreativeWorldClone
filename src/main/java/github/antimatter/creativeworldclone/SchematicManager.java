@@ -3,6 +3,7 @@ package github.antimatter.creativeworldclone;
 import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.data.SchematicHolder;
 import fi.dy.masa.litematica.schematic.LitematicaSchematic;
+import fi.dy.masa.litematica.schematic.placement.SchematicPlacement;
 import fi.dy.masa.litematica.schematic.projects.SchematicProjectsManager;
 import fi.dy.masa.litematica.selection.AreaSelection;
 import fi.dy.masa.litematica.selection.Box;
@@ -12,8 +13,10 @@ import fi.dy.masa.litematica.util.PositionUtils;
 import fi.dy.masa.malilib.interfaces.IStringConsumer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.PathUtil;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -37,7 +40,8 @@ public class SchematicManager {
     private static final SelectionManager selectionManager = DataManager.getSelectionManager();
     @Nullable
     private static SchematicManager instance;
-    private Boolean worldLoaded;
+    private Boolean worldLoaded = false;
+    private GameMode mode;
     private String name;
     private LitematicaSchematic schematic;
     private AreaSelection area;
@@ -54,17 +58,32 @@ public class SchematicManager {
         return instance;
     }
 
-    private static boolean isUnloaded() {
-        return instance == null || !instance.worldLoaded;
+    private static boolean isLoaded() {
+        return instance != null && instance.worldLoaded;
     }
 
-    public static void loadWorld(String worldName) {
-        instance = getInstance();
-        instance.name = StringUtils.removeSuffix(worldName, CreativeWorldClone.SUFFIX);
-        instance.createOrLoadProject();
-        instance.worldLoaded = true;
+    public static void loadWorld(MinecraftServer server) {
+        String worldName = server.getSaveProperties().getLevelName();
+        GameMode mode = server.getDefaultGameMode();
+        if (mode != GameMode.CREATIVE && mode != GameMode.SURVIVAL)
+            return;
 
-        LOGGER.info("SchematicManager loaded for world \"{}\"", worldName);
+        instance = getInstance();
+        instance.mode = mode;
+        instance.name = StringUtils.removeSuffix(worldName, CreativeWorldClone.SUFFIX);
+
+        if (mode == GameMode.CREATIVE) {
+            instance.createOrLoadProject();
+            instance.worldLoaded = true;
+        } else if (instance.tryLoadProject()) {
+            instance.placeSchematic();
+            instance.worldLoaded = true;
+        } else {
+            instance = null;
+        }
+
+        if (isLoaded())
+            LOGGER.info("SchematicManager loaded for world \"{}\" in {} mode", worldName, mode == GameMode.CREATIVE ? "Creative" : "Survival");
     }
 
     private void createProjectDir() {
@@ -81,15 +100,23 @@ public class SchematicManager {
             selectionManager.switchSelectionMode();
     }
 
-    private boolean tryLoadProject() {
-        this.createProjectDir();
+    private boolean tryLoadProjectFile(boolean createOnFailure) {
+        if (createOnFailure)
+            this.createProjectDir();
+
         if (projectsManager.loadProjectFromFile(new File(PROJECT_DIR, this.name + ".json"), true) == null) {
-            projectsManager.createNewProject(PROJECT_DIR, this.name);
+            if (createOnFailure)
+                projectsManager.createNewProject(PROJECT_DIR, this.name);
 
             return false;
         }
 
         return true;
+    }
+
+    private void loadSchematic() {
+        this.schematic = LitematicaSchematic.createFromFile(PROJECT_DIR, this.name);
+        schematicHolder.addSchematic(this.schematic, false);
     }
 
     private void createOrLoadWorkingArea(boolean shouldLoad) {
@@ -99,8 +126,7 @@ public class SchematicManager {
         String selectionID = new File(PROJECT_DIR, areaID + ".json").getAbsolutePath();
 
         if (shouldLoad) {
-            this.schematic = LitematicaSchematic.createFromFile(PROJECT_DIR, this.name);
-            schematicHolder.addSchematic(this.schematic, false);
+            loadSchematic();
         } else {
             selectionManager.createNewSelection(PROJECT_DIR, areaID);
         }
@@ -116,15 +142,33 @@ public class SchematicManager {
             this.maxCorner = PositionUtils.getMaxCorner(areaBox.getPosition(PositionUtils.Corner.CORNER_1), areaBox.getPosition(PositionUtils.Corner.CORNER_2));
             LOGGER.info("Loaded area \"{}\"", selectionID);
         } else {
+            this.area = selectionManager.getCurrentSelection();
             LOGGER.info("Created new area \"{}\"", selectionID);
         }
     }
 
     private void createOrLoadProject() {
-        boolean loaded = tryLoadProject();
+        boolean loaded = tryLoadProjectFile(true);
         DataManager.load();
         this.createOrLoadWorkingArea(loaded);
         this.save(false);
+    }
+
+    private boolean tryLoadProject() {
+        if (!tryLoadProjectFile(false))
+            return false;
+
+        DataManager.load();
+        this.createOrLoadWorkingArea(true);
+
+        return true;
+    }
+
+    private void placeSchematic() {
+        schematicHolder.addSchematic(this.schematic, false);
+        DataManager.save();
+        SchematicPlacement placement = SchematicPlacement.createFor(this.schematic, this.area.getEffectiveOrigin(), this.name, true, true);
+        DataManager.getSchematicPlacementManager().addSchematicPlacement(placement, false);
     }
 
     public void save(boolean forceSave) {
@@ -141,7 +185,7 @@ public class SchematicManager {
     }
 
     public static void close() {
-        if (isUnloaded())
+        if (!isLoaded())
             return;
 
         instance.persist();
@@ -174,7 +218,7 @@ public class SchematicManager {
     }
 
     public static void onPlace(BlockPos blockPos, String which) {
-        if (isUnloaded())
+        if (!isLoaded() || instance.mode == GameMode.SURVIVAL)
             return;
 
         LOGGER.info("{} placed at {}, {}, {}", which, blockPos.getX(), blockPos.getY(), blockPos.getZ());
@@ -182,7 +226,7 @@ public class SchematicManager {
     }
 
     public static void onBreak(BlockPos blockPos, String which) {
-        if (isUnloaded())
+        if (!isLoaded() || instance.mode == GameMode.SURVIVAL)
             return;
 
         LOGGER.info("{} break at {}, {}, {}", which, blockPos.getX(), blockPos.getY(), blockPos.getZ());

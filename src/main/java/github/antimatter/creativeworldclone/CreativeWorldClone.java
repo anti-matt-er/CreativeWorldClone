@@ -26,8 +26,7 @@ public class CreativeWorldClone implements ModInitializer {
 
     public static void onWorldLoad() {
         if (isLitematicaLoaded()) {
-            String levelName = Objects.requireNonNull(MinecraftClient.getInstance().getServer()).getSaveProperties().getLevelName();
-            SchematicManager.loadWorld(levelName);
+            SchematicManager.loadWorld(Objects.requireNonNull(MinecraftClient.getInstance().getServer()));
         }
     }
 
