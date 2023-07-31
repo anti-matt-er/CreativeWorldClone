@@ -12,6 +12,8 @@ import org.spongepowered.asm.mixin.Shadow;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 @Mixin(LevelStorage.Session.class)
 public abstract class LevelStorageSessionMixin implements ILevelStorageSessionMixinCloneable {
@@ -55,16 +57,30 @@ public abstract class LevelStorageSessionMixin implements ILevelStorageSessionMi
     }
 
     @Override
-    public void creativeWorldClone$setGameMode(int gameMode) throws IOException {
+    public <T> T creativeWorldClone$accessNbt(Function<NbtCompound, T> accessor) throws IOException {
         this.checkValid();
         Path path = this.directory.getLevelDatPath();
         if (Files.exists(path)) {
             NbtCompound nbtCompound = NbtIo.readCompressed(path.toFile());
-            NbtCompound dataNbt = nbtCompound.getCompound("Data");
-            NbtCompound playerNbt = dataNbt.getCompound("Player");
-            dataNbt.putInt("GameType", gameMode);
-            playerNbt.putInt("playerGameType", gameMode);
+            return accessor.apply(nbtCompound);
+        }
+
+        return null;
+    }
+
+    @Override
+    public void creativeWorldClone$modifyNbt(Consumer<NbtCompound> modifier) throws IOException {
+        this.checkValid();
+        Path path = this.directory.getLevelDatPath();
+        if (Files.exists(path)) {
+            NbtCompound nbtCompound = NbtIo.readCompressed(path.toFile());
+            modifier.accept(nbtCompound);
             NbtIo.writeCompressed(nbtCompound, path.toFile());
         }
+    }
+
+    @Override
+    public LevelStorage.LevelSave creativeWorldClone$getLevelSave() {
+        return this.directory;
     }
 }

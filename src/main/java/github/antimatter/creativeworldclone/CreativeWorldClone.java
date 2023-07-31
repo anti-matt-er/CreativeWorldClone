@@ -11,12 +11,17 @@ import java.util.Objects;
 
 public class CreativeWorldClone implements ModInitializer {
     //TODO: Run a code formatter over everything!
-    private static final Logger LOGGER = LoggerFactory.getLogger("creative-world-clone");
-    public static final String SUFFIX = " [CREATIVE]";
+    private static final String ID = "creative-world-clone";
+    private static final Logger LOGGER = LoggerFactory.getLogger(ID);
 
     @Override
     public void onInitialize() {
         LOGGER.info("CreativeWorldClone initialized!");
+    }
+
+    @Unique
+    public static String getId() {
+        return ID;
     }
 
     @Unique

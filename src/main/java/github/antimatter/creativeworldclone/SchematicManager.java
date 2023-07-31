@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 public class SchematicManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger("creative-world-clone");
+    private static final Logger LOGGER = LoggerFactory.getLogger(CreativeWorldClone.getId());
     private static final String AREA_NAME = "Working Area";
     private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
     @NotNull
@@ -58,32 +58,53 @@ public class SchematicManager {
         return instance;
     }
 
-    private static boolean isLoaded() {
-        return instance != null && instance.worldLoaded;
+    private static boolean isUnloaded() {
+        return instance == null || !instance.worldLoaded;
     }
 
-    public static void loadWorld(MinecraftServer server) {
-        String worldName = server.getSaveProperties().getLevelName();
-        GameMode mode = server.getDefaultGameMode();
-        if (mode != GameMode.CREATIVE && mode != GameMode.SURVIVAL)
+    private static void loadCreativeWorld(String worldId) {
+        if (!ConfigHandler.isClone(worldId))
             return;
 
         instance = getInstance();
-        instance.mode = mode;
-        instance.name = StringUtils.removeSuffix(worldName, CreativeWorldClone.SUFFIX);
+        instance.mode = GameMode.CREATIVE;
+        instance.name = ConfigHandler.getBaseWorldID(worldId);
+        instance.createOrLoadProject();
+        instance.worldLoaded = true;
 
-        if (mode == GameMode.CREATIVE) {
-            instance.createOrLoadProject();
-            instance.worldLoaded = true;
-        } else if (instance.tryLoadProject()) {
-            instance.placeSchematic();
-            instance.worldLoaded = true;
-        } else {
+        LOGGER.info("SchematicManager loaded for world \"{}\" in Creative mode", instance.name);
+    }
+
+    private static void loadSurvivalWorld(String worldId) {
+        if (!ConfigHandler.hasClone(worldId))
+            return;
+
+        instance = getInstance();
+        instance.mode = GameMode.SURVIVAL;
+        instance.name = worldId;
+
+        if (!instance.tryLoadProject()) {
             instance = null;
+            LOGGER.error("SchematicManager couldn't load project for \"{}\" in Survival mode!", worldId);
+
+            return;
         }
 
-        if (isLoaded())
-            LOGGER.info("SchematicManager loaded for world \"{}\" in {} mode", worldName, mode == GameMode.CREATIVE ? "Creative" : "Survival");
+        instance.placeSchematic();
+        instance.worldLoaded = true;
+
+        LOGGER.info("SchematicManager loaded for world \"{}\" in Survival mode", worldId);
+    }
+
+    public static void loadWorld(MinecraftServer server) {
+        String worldId = server.session.getDirectoryName();
+        GameMode mode = server.getDefaultGameMode();
+
+        if (mode == GameMode.CREATIVE) {
+            loadCreativeWorld(worldId);
+        } else if (mode == GameMode.SURVIVAL) {
+            loadSurvivalWorld(worldId);
+        }
     }
 
     private void createProjectDir() {
@@ -122,13 +143,12 @@ public class SchematicManager {
     private void createOrLoadWorkingArea(boolean shouldLoad) {
         this.setSelectionMode(SelectionMode.NORMAL);
 
-        String areaID = StringUtils.normalize(this.name + "_" + AREA_NAME);
-        String selectionID = new File(PROJECT_DIR, areaID + ".json").getAbsolutePath();
+        String selectionID = new File(PROJECT_DIR, AREA_NAME + ".json").getAbsolutePath();
 
         if (shouldLoad) {
             loadSchematic();
         } else {
-            selectionManager.createNewSelection(PROJECT_DIR, areaID);
+            selectionManager.createNewSelection(PROJECT_DIR, AREA_NAME);
         }
 
         this.area = selectionManager.getOrLoadSelection(selectionID);
@@ -185,7 +205,7 @@ public class SchematicManager {
     }
 
     public static void close() {
-        if (!isLoaded())
+        if (isUnloaded())
             return;
 
         instance.persist();
@@ -218,7 +238,7 @@ public class SchematicManager {
     }
 
     public static void onPlace(BlockPos blockPos, String which) {
-        if (!isLoaded() || instance.mode == GameMode.SURVIVAL)
+        if (isUnloaded() || instance.mode == GameMode.SURVIVAL)
             return;
 
         LOGGER.info("{} placed at {}, {}, {}", which, blockPos.getX(), blockPos.getY(), blockPos.getZ());
@@ -226,7 +246,7 @@ public class SchematicManager {
     }
 
     public static void onBreak(BlockPos blockPos, String which) {
-        if (!isLoaded() || instance.mode == GameMode.SURVIVAL)
+        if (isUnloaded() || instance.mode == GameMode.SURVIVAL)
             return;
 
         LOGGER.info("{} break at {}, {}, {}", which, blockPos.getX(), blockPos.getY(), blockPos.getZ());
