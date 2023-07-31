@@ -28,11 +28,10 @@ import java.util.Objects;
 
 public class SchematicManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(CreativeWorldClone.getId());
-    private static final String AREA_NAME = "Working Area";
     private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
     @NotNull
     private static final PlayerEntity PLAYER = Objects.requireNonNull(CLIENT.player);
-    private static final File PROJECT_DIR = new File(CLIENT.runDirectory, "schematics/CreativeWorldClone/");
+    private static final File CLONE_SCHEMATICS_DIR = new File(CLIENT.runDirectory, "schematics/CreativeWorldClone/");
     private static final LitematicaSchematic.SchematicSaveInfo SAVE_INFO = new LitematicaSchematic.SchematicSaveInfo(false, false);
     private static final IStringConsumer LOG_STRING_CONSUMER = string -> LOGGER.info("Litematica createFromWorld feedback: \"{}\"", string);
     private static final SchematicProjectsManager projectsManager = DataManager.getSchematicProjectsManager();
@@ -40,6 +39,7 @@ public class SchematicManager {
     private static final SelectionManager selectionManager = DataManager.getSelectionManager();
     @Nullable
     private static SchematicManager instance;
+    private File projectDir;
     private Boolean worldLoaded = false;
     private GameMode mode;
     private String name;
@@ -69,6 +69,8 @@ public class SchematicManager {
         instance = getInstance();
         instance.mode = GameMode.CREATIVE;
         instance.name = ConfigHandler.getBaseWorldID(worldId);
+        assert instance.name != null;
+        instance.projectDir = new File(CLONE_SCHEMATICS_DIR, instance.name);
         instance.createOrLoadProject();
         instance.worldLoaded = true;
 
@@ -82,6 +84,7 @@ public class SchematicManager {
         instance = getInstance();
         instance.mode = GameMode.SURVIVAL;
         instance.name = worldId;
+        instance.projectDir = new File(CLONE_SCHEMATICS_DIR, instance.name);
 
         if (!instance.tryLoadProject()) {
             instance = null;
@@ -105,11 +108,14 @@ public class SchematicManager {
         } else if (mode == GameMode.SURVIVAL) {
             loadSurvivalWorld(worldId);
         }
+
+        if (isUnloaded())
+            DataManager.clear();
     }
 
     private void createProjectDir() {
         try {
-            PathUtil.createDirectories(PROJECT_DIR.toPath());
+            PathUtil.createDirectories(this.projectDir.toPath());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -125,9 +131,9 @@ public class SchematicManager {
         if (createOnFailure)
             this.createProjectDir();
 
-        if (projectsManager.loadProjectFromFile(new File(PROJECT_DIR, this.name + ".json"), true) == null) {
+        if (projectsManager.loadProjectFromFile(new File(this.projectDir, "project.json"), true) == null) {
             if (createOnFailure)
-                projectsManager.createNewProject(PROJECT_DIR, this.name);
+                projectsManager.createNewProject(this.projectDir, "project");
 
             return false;
         }
@@ -136,23 +142,23 @@ public class SchematicManager {
     }
 
     private void loadSchematic() {
-        this.schematic = LitematicaSchematic.createFromFile(PROJECT_DIR, this.name);
+        this.schematic = LitematicaSchematic.createFromFile(this.projectDir, "schematic");
         schematicHolder.addSchematic(this.schematic, false);
     }
 
     private void createOrLoadWorkingArea(boolean shouldLoad) {
         this.setSelectionMode(SelectionMode.NORMAL);
 
-        String selectionID = new File(PROJECT_DIR, AREA_NAME + ".json").getAbsolutePath();
+        String selectionID = new File(this.projectDir, "area.json").getAbsolutePath();
 
         if (shouldLoad) {
             loadSchematic();
         } else {
-            selectionManager.createNewSelection(PROJECT_DIR, AREA_NAME);
+            selectionManager.createNewSelection(this.projectDir, "area");
         }
 
         this.area = selectionManager.getOrLoadSelection(selectionID);
-        Objects.requireNonNull(this.area).setName(AREA_NAME);
+        Objects.requireNonNull(this.area).setName("area");
         selectionManager.setCurrentSelection(selectionID);
 
         if (shouldLoad) {
@@ -192,8 +198,8 @@ public class SchematicManager {
     }
 
     public void save(boolean forceSave) {
+        schematicHolder.removeSchematic(this.schematic);
         this.schematic = LitematicaSchematic.createFromWorld(MinecraftClient.getInstance().world, this.area, SAVE_INFO, PLAYER.getDisplayName().getString(), LOG_STRING_CONSUMER);
-        schematicHolder.clearLoadedSchematics();
         schematicHolder.addSchematic(this.schematic, false);
         DataManager.save(forceSave);
         projectsManager.saveCurrentProject();
@@ -201,7 +207,7 @@ public class SchematicManager {
 
     private void persist() {
         this.save(true);
-        this.schematic.writeToFile(PROJECT_DIR, this.name, true);
+        this.schematic.writeToFile(this.projectDir, "schematic", true);
     }
 
     public static void close() {
@@ -210,6 +216,8 @@ public class SchematicManager {
 
         instance.persist();
         instance.worldLoaded = false;
+        schematicHolder.removeSchematic(instance.schematic);
+        DataManager.clear();
         instance = null;
         LOGGER.info("SchematicManager unloaded");
     }
