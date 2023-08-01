@@ -39,6 +39,18 @@ public class WorldUtils {
         });
     }
 
+    private static String getWorldName(LevelStorage.Session storageSession) {
+        try {
+            return ((ILevelStorageSessionMixinCloneable) storageSession).creativeWorldClone$accessNbt(nbtCompound -> {
+                NbtCompound dataNbt = nbtCompound.getCompound("Data");
+                return dataNbt.getString("LevelName");
+            });
+        } catch (IOException e) {
+            LOGGER.error("Failed to retrieve level name from NBT!", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     public static GameMode getGameMode(LevelStorage.Session storageSession) {
         return Objects.requireNonNull(storageSession.getLevelSummary()).getGameMode();
     }
@@ -49,11 +61,13 @@ public class WorldUtils {
 
         String baseWorldId = storageSession.getDirectoryName();
         String clonedWorldId = baseWorldId + SUFFIX;
+        String baseWorldName = getWorldName(storageSession);
+        String clonedWorldName = baseWorldName + SUFFIX;
 
         BooleanConsumer cloneTask = overwrite -> {
             try {
                 SchematicManager.backupAndDeleteProject(baseWorldId);
-                storageSession.save(baseWorldId);
+                storageSession.save(baseWorldName);
                 LevelStorage.Session cloneSession = client.getLevelStorage().createSession(clonedWorldId);
                 if (overwrite) {
                     cloneSession.deleteSessionLock();
@@ -61,7 +75,7 @@ public class WorldUtils {
                 }
                 clone(storageSession, clonedWorldId);
                 storageSession.close();
-                cloneSession.save(clonedWorldId);
+                cloneSession.save(clonedWorldName);
                 makeCreative(cloneSession);
                 cloneSession.close();
                 ConfigHandler.addClone(clonedWorldId, baseWorldId);
