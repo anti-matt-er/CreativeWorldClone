@@ -17,20 +17,20 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.PathUtil;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.time.Instant;
 import java.util.Objects;
 
 public class SchematicManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(CreativeWorldClone.getId());
     private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
-    @NotNull
-    private static final PlayerEntity PLAYER = Objects.requireNonNull(CLIENT.player);
+    private static final PlayerEntity PLAYER = CLIENT.player;
     private static final File CLONE_SCHEMATICS_DIR = new File(CLIENT.runDirectory, "schematics/CreativeWorldClone/");
     private static final LitematicaSchematic.SchematicSaveInfo SAVE_INFO = new LitematicaSchematic.SchematicSaveInfo(false, false);
     private static final IStringConsumer LOG_STRING_CONSUMER = string -> LOGGER.info("Litematica createFromWorld feedback: \"{}\"", string);
@@ -70,7 +70,7 @@ public class SchematicManager {
         instance.mode = GameMode.CREATIVE;
         instance.name = ConfigHandler.getBaseWorldID(worldId);
         assert instance.name != null;
-        instance.projectDir = new File(CLONE_SCHEMATICS_DIR, instance.name);
+        instance.projectDir = getProjectDir(instance.name);
         instance.createOrLoadProject();
         instance.worldLoaded = true;
 
@@ -84,11 +84,11 @@ public class SchematicManager {
         instance = getInstance();
         instance.mode = GameMode.SURVIVAL;
         instance.name = worldId;
-        instance.projectDir = new File(CLONE_SCHEMATICS_DIR, instance.name);
+        instance.projectDir = getProjectDir(instance.name);
 
         if (!instance.tryLoadProject()) {
             instance = null;
-            LOGGER.error("SchematicManager couldn't load project for \"{}\" in Survival mode!", worldId);
+            LOGGER.info("SchematicManager couldn't find project for \"{}\" in Survival mode", worldId);
 
             return;
         }
@@ -111,6 +111,10 @@ public class SchematicManager {
 
         if (isUnloaded())
             DataManager.clear();
+    }
+
+    private static File getProjectDir(String worldId) {
+        return new File(CLONE_SCHEMATICS_DIR, worldId);
     }
 
     private void createProjectDir() {
@@ -188,6 +192,26 @@ public class SchematicManager {
         this.createOrLoadWorkingArea(true);
 
         return true;
+    }
+
+    public static void backupAndDeleteProject(String worldId) {
+        File dir = getProjectDir(worldId);
+
+        if (!dir.exists()) {
+            LOGGER.info("No schematic project managed for {}", worldId);
+            return;
+        }
+
+        if (!new File(dir, "area.json").delete())
+            LOGGER.error("Failed to delete {}/area.json!", worldId);
+        if (!new File(dir, "project.json").delete())
+            LOGGER.error("Failed to delete {}/project.json!", worldId);
+
+        try {
+            Files.move(new File(dir, "schematic.litematic").toPath(), new File(dir, Instant.now().getEpochSecond() + ".litematic").toPath());
+        } catch (IOException e) {
+            LOGGER.error("Failed to backup {} schematic!", worldId, e);
+        }
     }
 
     private void placeSchematic() {
