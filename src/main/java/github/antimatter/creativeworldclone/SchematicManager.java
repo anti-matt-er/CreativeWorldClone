@@ -247,6 +247,8 @@ public class SchematicManager {
     }
 
     private void onBlockChange(BlockPos blockPos) {
+        LOGGER.info("{}", this.area.getSelectedSubRegionBox());
+        
         if (this.minCorner == null)
             this.minCorner = blockPos;
         if (this.maxCorner == null)
