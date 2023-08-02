@@ -12,7 +12,6 @@ import fi.dy.masa.litematica.selection.SelectionMode;
 import fi.dy.masa.litematica.util.PositionUtils;
 import fi.dy.masa.malilib.interfaces.IStringConsumer;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.PathUtil;
 import net.minecraft.util.math.BlockPos;
@@ -28,16 +27,15 @@ import java.time.Instant;
 
 public class SchematicManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(CreativeWorldClone.getId());
-    private static final MinecraftClient CLIENT = MinecraftClient.getInstance();
-    private static final PlayerEntity PLAYER = CLIENT.player;
-    private static final File CLONE_SCHEMATICS_DIR = new File(CLIENT.runDirectory, "schematics/CreativeWorldClone/");
+    private static final File CLONE_SCHEMATICS_DIR = new File(MinecraftClient.getInstance().runDirectory, "schematics/CreativeWorldClone/");
     private static final LitematicaSchematic.SchematicSaveInfo SAVE_INFO = new LitematicaSchematic.SchematicSaveInfo(false, false);
     private static final IStringConsumer LOG_STRING_CONSUMER = string -> LOGGER.info("Litematica createFromWorld feedback: \"{}\"", string);
-    private static final SchematicProjectsManager projectsManager = DataManager.getSchematicProjectsManager();
-    private static final SchematicHolder schematicHolder = SchematicHolder.getInstance();
-    private static final SelectionManager selectionManager = DataManager.getSelectionManager();
     @Nullable
     private static SchematicManager instance;
+    private final MinecraftClient client;
+    private final SchematicProjectsManager projectsManager;
+    private final SchematicHolder schematicHolder;
+    private final SelectionManager selectionManager;
     private File projectDir;
     private Boolean worldLoaded = false;
     private GameMode mode;
@@ -49,6 +47,10 @@ public class SchematicManager {
     private boolean hasEdits = false;
 
     private SchematicManager() {
+        this.client = MinecraftClient.getInstance();
+        this.projectsManager = DataManager.getSchematicProjectsManager();
+        this.schematicHolder = SchematicHolder.getInstance();
+        this.selectionManager = DataManager.getSelectionManager();
     }
 
     public static SchematicManager getInstance() {
@@ -232,7 +234,8 @@ public class SchematicManager {
 
     public void save(boolean forceSave) {
         schematicHolder.removeSchematic(this.schematic);
-        this.schematic = LitematicaSchematic.createFromWorld(MinecraftClient.getInstance().world, this.area, SAVE_INFO, PLAYER.getDisplayName().getString(), LOG_STRING_CONSUMER);
+        assert this.client.player != null;
+        this.schematic = LitematicaSchematic.createFromWorld(MinecraftClient.getInstance().world, this.area, SAVE_INFO, this.client.player.getDisplayName().getString(), LOG_STRING_CONSUMER);
         schematicHolder.addSchematic(this.schematic, false);
         DataManager.save(forceSave);
         projectsManager.saveCurrentProject();
@@ -260,7 +263,7 @@ public class SchematicManager {
 
         instance.persist();
         instance.worldLoaded = false;
-        schematicHolder.removeSchematic(instance.schematic);
+        instance.schematicHolder.removeSchematic(instance.schematic);
         DataManager.clear();
         instance = null;
         LOGGER.info("SchematicManager unloaded");
