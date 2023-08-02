@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.util.Objects;
 
 public class SchematicManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(CreativeWorldClone.getId());
@@ -47,6 +46,7 @@ public class SchematicManager {
     private AreaSelection area;
     private BlockPos minCorner;
     private BlockPos maxCorner;
+    private boolean hasEdits = false;
 
     private SchematicManager() {
     }
@@ -147,32 +147,32 @@ public class SchematicManager {
 
     private void loadSchematic() {
         this.schematic = LitematicaSchematic.createFromFile(this.projectDir, "schematic");
-        schematicHolder.addSchematic(this.schematic, false);
+        if (this.schematic != null)
+            schematicHolder.addSchematic(this.schematic, false);
     }
 
-    private void createOrLoadWorkingArea(boolean shouldLoad) {
+    private void createOrLoadWorkingArea() {
         this.setSelectionMode(SelectionMode.NORMAL);
 
-        String selectionID = new File(this.projectDir, "area.json").getAbsolutePath();
-
-        if (shouldLoad) {
-            loadSchematic();
-        } else {
-            selectionManager.createNewSelection(this.projectDir, "area");
-        }
-
-        this.area = selectionManager.getOrLoadSelection(selectionID);
-        Objects.requireNonNull(this.area).setName("area");
+        File areaFile = new File(this.projectDir, "area.json");
+        String selectionID = areaFile.getAbsolutePath();
         selectionManager.setCurrentSelection(selectionID);
+        this.area = selectionManager.getCurrentSelection();
 
-        if (shouldLoad) {
+        if (this.area != null && this.area.getExplicitOrigin() != null) {
             Box areaBox = this.area.getSelectedSubRegionBox();
             assert areaBox != null;
             this.minCorner = PositionUtils.getMinCorner(areaBox.getPosition(PositionUtils.Corner.CORNER_1), areaBox.getPosition(PositionUtils.Corner.CORNER_2));
             this.maxCorner = PositionUtils.getMaxCorner(areaBox.getPosition(PositionUtils.Corner.CORNER_1), areaBox.getPosition(PositionUtils.Corner.CORNER_2));
+            this.hasEdits = true;
             LOGGER.info("Loaded area \"{}\"", selectionID);
         } else {
+            if (areaFile.exists() && !areaFile.delete())
+                LOGGER.error("Cannot delete area file!");
+            selectionManager.createNewSelection(this.projectDir, "area");
             this.area = selectionManager.getCurrentSelection();
+            assert this.area != null;
+            this.area.setName("area");
             LOGGER.info("Created new area \"{}\"", selectionID);
         }
     }
@@ -180,7 +180,9 @@ public class SchematicManager {
     private void createOrLoadProject() {
         boolean loaded = tryLoadProjectFile(true);
         DataManager.load();
-        this.createOrLoadWorkingArea(loaded);
+        if (loaded)
+            this.loadSchematic();
+        this.createOrLoadWorkingArea();
         this.save(false);
     }
 
@@ -189,7 +191,8 @@ public class SchematicManager {
             return false;
 
         DataManager.load();
-        this.createOrLoadWorkingArea(true);
+        this.loadSchematic();
+        this.createOrLoadWorkingArea();
 
         return true;
     }
@@ -231,7 +234,18 @@ public class SchematicManager {
 
     private void persist() {
         this.save(true);
-        this.schematic.writeToFile(this.projectDir, "schematic", true);
+        File areaFile = new File(this.projectDir, "area.json");
+        if (this.hasEdits) {
+            try {
+                Files.write(areaFile.toPath(), this.area.toJson().toString().getBytes());
+            } catch (IOException e) {
+                LOGGER.error("Cannot save area file!", e);
+            }
+        } else if (areaFile.exists() && !areaFile.delete()) {
+            LOGGER.error("Cannot delete area file!");
+        }
+        if (this.schematic != null)
+            this.schematic.writeToFile(this.projectDir, "schematic", true);
     }
 
     public static void close() {
@@ -248,7 +262,7 @@ public class SchematicManager {
 
     private void onBlockChange(BlockPos blockPos) {
         LOGGER.info("{}", this.area.getSelectedSubRegionBox());
-        
+
         if (this.minCorner == null)
             this.minCorner = blockPos;
         if (this.maxCorner == null)
@@ -261,6 +275,7 @@ public class SchematicManager {
         this.maxCorner = newMax;
         this.area.setExplicitOrigin(newMin);
         this.area.setOriginSelected(true);
+        this.hasEdits = true;
 
         this.save(false);
 
