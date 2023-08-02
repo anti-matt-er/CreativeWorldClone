@@ -199,21 +199,27 @@ public class SchematicManager {
 
     public static void backupAndDeleteProject(String worldId) {
         File dir = getProjectDir(worldId);
+        File projectFile = new File(dir, "project.json");
 
-        if (!dir.exists()) {
+        if (!dir.exists() || !projectFile.exists()) {
             LOGGER.info("No schematic project managed for {}", worldId);
             return;
         }
 
-        if (!new File(dir, "area.json").delete())
-            LOGGER.error("Failed to delete {}/area.json!", worldId);
-        if (!new File(dir, "project.json").delete())
-            LOGGER.error("Failed to delete {}/project.json!", worldId);
+        File areaFile = new File(dir, "area.json");
+        File schematicFile = new File(dir, "schematic.litematic");
+        File schematicBackupFile = new File(dir, Instant.now().getEpochSecond() + ".litematic");
 
-        try {
-            Files.move(new File(dir, "schematic.litematic").toPath(), new File(dir, Instant.now().getEpochSecond() + ".litematic").toPath());
-        } catch (IOException e) {
-            LOGGER.error("Failed to backup {} schematic!", worldId, e);
+        if (areaFile.exists() && !areaFile.delete())
+            LOGGER.error("Failed to delete {}/area.json!", worldId);
+        if (projectFile.exists() && !projectFile.delete())
+            LOGGER.error("Failed to delete {}/project.json!", worldId);
+        if (schematicFile.exists()) {
+            try {
+                Files.move(schematicFile.toPath(), schematicBackupFile.toPath());
+            } catch (IOException e) {
+                LOGGER.error("Failed to backup {} schematic!", worldId, e);
+            }
         }
     }
 

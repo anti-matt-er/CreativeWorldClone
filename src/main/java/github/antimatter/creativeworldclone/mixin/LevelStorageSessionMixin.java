@@ -1,6 +1,8 @@
 package github.antimatter.creativeworldclone.mixin;
 
+import github.antimatter.creativeworldclone.ConfigHandler;
 import github.antimatter.creativeworldclone.ILevelStorageSessionMixinCloneable;
+import github.antimatter.creativeworldclone.SchematicManager;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.util.PathUtil;
@@ -8,6 +10,9 @@ import net.minecraft.world.level.storage.LevelStorage;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -23,6 +28,18 @@ public abstract class LevelStorageSessionMixin implements ILevelStorageSessionMi
 
     @Shadow
     protected abstract void checkValid();
+
+    @Shadow
+    @Final
+    private String directoryName;
+
+    @Inject(method = "deleteSessionLock", at = @At("HEAD"))
+    public void deleteCloneEntry(CallbackInfo ci) {
+        if (ConfigHandler.isClone(this.directoryName)) {
+            SchematicManager.backupAndDeleteProject(ConfigHandler.getBaseWorldID(this.directoryName));
+            ConfigHandler.removeClone(this.directoryName);
+        }
+    }
 
     @Override
     public void creativeWorldClone$cloneLevel(String targetDir) throws IOException {

@@ -66,7 +66,6 @@ public class WorldUtils {
 
         BooleanConsumer cloneTask = overwrite -> {
             try {
-                SchematicManager.backupAndDeleteProject(baseWorldId);
                 storageSession.save(baseWorldName);
                 LevelStorage.Session cloneSession = client.getLevelStorage().createSession(clonedWorldId);
                 if (overwrite) {
