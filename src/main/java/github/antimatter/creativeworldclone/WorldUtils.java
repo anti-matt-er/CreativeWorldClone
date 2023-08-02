@@ -18,7 +18,6 @@ import java.util.Objects;
 
 public class WorldUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(CreativeWorldClone.getId());
-    public static final String SUFFIX = " [CREATIVE]";
 
     private static void clone(LevelStorage.Session storageSession, String newName) throws IOException {
         ((ILevelStorageSessionMixinCloneable) storageSession).creativeWorldClone$cloneLevel(newName);
@@ -39,18 +38,6 @@ public class WorldUtils {
         });
     }
 
-    private static String getWorldName(LevelStorage.Session storageSession) {
-        try {
-            return ((ILevelStorageSessionMixinCloneable) storageSession).creativeWorldClone$accessNbt(nbtCompound -> {
-                NbtCompound dataNbt = nbtCompound.getCompound("Data");
-                return dataNbt.getString("LevelName");
-            });
-        } catch (IOException e) {
-            LOGGER.error("Failed to retrieve level name from NBT!", e);
-            throw new RuntimeException(e);
-        }
-    }
-
     public static GameMode getGameMode(LevelStorage.Session storageSession) {
         return Objects.requireNonNull(storageSession.getLevelSummary()).getGameMode();
     }
@@ -59,33 +46,28 @@ public class WorldUtils {
         if (getGameMode(storageSession) == GameMode.CREATIVE)
             return;
 
-        String baseWorldId = storageSession.getDirectoryName();
-        String clonedWorldId = baseWorldId + SUFFIX;
-        String baseWorldName = getWorldName(storageSession);
-        String clonedWorldName = baseWorldName + SUFFIX;
+        String clonedWorldDirName = ConfigHandler.addClone(storageSession.getDirectoryName());
 
         BooleanConsumer cloneTask = overwrite -> {
             try {
-                storageSession.save(baseWorldName);
-                LevelStorage.Session cloneSession = client.getLevelStorage().createSession(clonedWorldId);
+                LevelStorage.Session cloneSession = client.getLevelStorage().createSession(clonedWorldDirName);
                 if (overwrite) {
                     cloneSession.deleteSessionLock();
-                    cloneSession = client.getLevelStorage().createSession(clonedWorldId);
+                    cloneSession = client.getLevelStorage().createSession(clonedWorldDirName);
                 }
-                clone(storageSession, clonedWorldId);
+                clone(storageSession, clonedWorldDirName);
                 storageSession.close();
-                cloneSession.save(clonedWorldName);
                 makeCreative(cloneSession);
                 cloneSession.close();
-                ConfigHandler.addClone(clonedWorldId, baseWorldId);
                 editScreenCallback.accept(true);
             } catch (IOException | SymlinkValidationException e) {
                 LOGGER.error("Failed to clone world!", e);
+                ConfigHandler.removeClone(clonedWorldDirName);
                 editScreenCallback.accept(false);
             }
         };
 
-        if (clonedWorldExists(storageSession, clonedWorldId)) {
+        if (clonedWorldExists(storageSession, clonedWorldDirName)) {
             Screen currentScreen = client.currentScreen;
             BooleanConsumer confirmCloneTask = proceed -> {
                 if (proceed) {

@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 @Mixin(LevelStorage.Session.class)
 public abstract class LevelStorageSessionMixin implements ILevelStorageSessionMixinCloneable {
@@ -71,18 +70,6 @@ public abstract class LevelStorageSessionMixin implements ILevelStorageSessionMi
                 return FileVisitResult.CONTINUE;
             }
         });
-    }
-
-    @Override
-    public <T> T creativeWorldClone$accessNbt(Function<NbtCompound, T> accessor) throws IOException {
-        this.checkValid();
-        Path path = this.directory.getLevelDatPath();
-        if (Files.exists(path)) {
-            NbtCompound nbtCompound = NbtIo.readCompressed(path.toFile());
-            return accessor.apply(nbtCompound);
-        }
-
-        return null;
     }
 
     @Override
