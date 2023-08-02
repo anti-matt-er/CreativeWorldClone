@@ -6,17 +6,18 @@
   "mixins": [
   ],
   "client": [
-    "PlaceBlockMixin",
-    "BreakBlockMixin",
-    "ItemFrameEntityMixin",
-    "PaintingEntityMixin",
-    "LeashKnotEntityMixin",
     "ArmorStandEntityMixin",
-    "EntityMixin",
+    "BreakBlockMixin",
     "ClientPlayNetworkHandlerMixin",
-    "ServerPlayNetworkHandlerMixin",
     "EditWorldScreenMixin",
-    "LevelStorageSessionMixin"
+    "EntityMixin",
+    "ItemFrameEntityMixin",
+    "LeashKnotEntityMixin",
+    "LevelStorageSessionMixin",
+    "PaintingEntityMixin",
+    "PlaceBlockMixin",
+    "ServerPlayNetworkHandlerMixin",
+    "WorldListWidgetMixin"
   ],
   "injectors": {
     "defaultRequire": 1
