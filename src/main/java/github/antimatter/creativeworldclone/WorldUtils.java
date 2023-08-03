@@ -23,6 +23,10 @@ public class WorldUtils {
         ((ILevelStorageSessionMixinCloneable) storageSession).creativeWorldClone$cloneLevel(newName);
     }
 
+    private static void createCloneIcon(LevelStorage.Session storageSession) {
+        ((ILevelStorageSessionMixinCloneable) storageSession).creativeWorldClone$createCloneIcon();
+    }
+
     private static boolean clonedWorldExists(LevelStorage.Session storageSession, String newName) {
         return Files.exists(((ILevelStorageSessionMixinCloneable) storageSession).creativeWorldClone$getLevelSave().path().resolveSibling(newName));
     }
@@ -58,6 +62,7 @@ public class WorldUtils {
                 clone(storageSession, clonedWorldDirName);
                 storageSession.close();
                 makeCreative(cloneSession);
+                createCloneIcon(cloneSession);
                 cloneSession.close();
                 editScreenCallback.accept(true);
             } catch (IOException | SymlinkValidationException e) {

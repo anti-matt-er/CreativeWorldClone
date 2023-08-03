@@ -14,10 +14,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Optional;
 import java.util.function.Consumer;
+
+import static github.antimatter.creativeworldclone.CreativeWorldClone.OVERLAY_ICON;
 
 @Mixin(LevelStorage.Session.class)
 public abstract class LevelStorageSessionMixin implements ILevelStorageSessionMixinCloneable {
@@ -32,12 +39,43 @@ public abstract class LevelStorageSessionMixin implements ILevelStorageSessionMi
     @Final
     private String directoryName;
 
+    @Shadow
+    public abstract Optional<Path> getIconFile();
+
     @Inject(method = "deleteSessionLock", at = @At("HEAD"))
     public void deleteCloneEntry(CallbackInfo ci) {
         if (ConfigHandler.isClone(this.directoryName)) {
             SchematicManager.backupAndDeleteProject(ConfigHandler.getBaseWorldID(this.directoryName));
             ConfigHandler.removeClone(this.directoryName);
         }
+    }
+
+    @Override
+    public void creativeWorldClone$createCloneIcon() {
+        getIconFile().ifPresent(path -> {
+            File iconFile = path.toFile();
+            File cloneIconFile = path.resolveSibling("clone_icon.png").toFile();
+
+            try {
+                BufferedImage iconImage = ImageIO.read(iconFile);
+                BufferedImage overlayImage = ImageIO.read(OVERLAY_ICON.getInputStream());
+
+                int width = iconImage.getWidth();
+                int height = iconImage.getHeight();
+
+                BufferedImage resultImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+                Graphics g = resultImage.getGraphics();
+                g.drawImage(iconImage, 0, 0, null);
+                g.drawImage(overlayImage, 0, 0, null);
+
+                g.dispose();
+
+                ImageIO.write(resultImage, "png", cloneIconFile);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override

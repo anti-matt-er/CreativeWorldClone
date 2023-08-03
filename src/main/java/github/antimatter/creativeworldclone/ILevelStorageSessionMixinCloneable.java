@@ -9,6 +9,8 @@ import java.util.function.Consumer;
 public interface ILevelStorageSessionMixinCloneable {
     void creativeWorldClone$cloneLevel(String targetDir) throws IOException;
 
+    void creativeWorldClone$createCloneIcon();
+
     void creativeWorldClone$modifyNbt(Consumer<NbtCompound> modifier) throws IOException;
 
     LevelStorage.LevelSave creativeWorldClone$getLevelSave();
