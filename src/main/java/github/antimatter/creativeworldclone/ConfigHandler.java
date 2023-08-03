@@ -1,8 +1,8 @@
 package github.antimatter.creativeworldclone;
 
-import com.google.common.collect.HashBiMap;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.UUID;
 
 public class ConfigHandler {
@@ -11,27 +11,31 @@ public class ConfigHandler {
 
     static {
         if (CONFIG.clonedWorlds() == null)
-            CONFIG.clonedWorlds(HashBiMap.create());
+            CONFIG.clonedWorlds(new HashMap<>());
+    }
+
+    private static String generateId() {
+        return Long.toHexString(UUID.randomUUID().getLeastSignificantBits());
     }
 
     @Nullable
-    private static Long parseIdString(String clonedWorldId) {
+    private static String parseIdString(String clonedWorldId) {
         if (!clonedWorldId.startsWith(PREFIX))
             return null;
 
-        return Long.parseUnsignedLong(clonedWorldId.substring(PREFIX.length()), 16);
+        return clonedWorldId.substring(PREFIX.length());
     }
 
     public static String addClone(String baseWorldId) {
-        long id = UUID.randomUUID().getLeastSignificantBits();
+        String id = generateId();
         CONFIG.clonedWorlds().put(id, baseWorldId);
         CONFIG.save();
 
-        return PREFIX + Long.toHexString(id);
+        return PREFIX + id;
     }
 
     public static void removeClone(String clonedWorldId) {
-        Long id = parseIdString(clonedWorldId);
+        String id = parseIdString(clonedWorldId);
         if (id == null)
             return;
 
@@ -44,7 +48,7 @@ public class ConfigHandler {
     }
 
     public static boolean isClone(String clonedWorldId) {
-        Long id = parseIdString(clonedWorldId);
+        String id = parseIdString(clonedWorldId);
         if (id == null)
             return false;
 
@@ -53,7 +57,7 @@ public class ConfigHandler {
 
     @Nullable
     public static String getBaseWorldID(String clonedWorldId) {
-        Long id = parseIdString(clonedWorldId);
+        String id = parseIdString(clonedWorldId);
         if (id == null)
             return null;
 
