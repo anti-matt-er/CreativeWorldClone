@@ -1,5 +1,6 @@
 package github.antimatter.creativeworldclone;
 
+import fi.dy.masa.litematica.config.Configs;
 import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.data.SchematicHolder;
 import fi.dy.masa.litematica.schematic.LitematicaSchematic;
@@ -45,6 +46,7 @@ public class SchematicManager {
     private BlockPos minCorner;
     private BlockPos maxCorner;
     private boolean hasEdits = false;
+    private boolean wasRenderEnabled = true;
 
     private SchematicManager() {
         this.client = MinecraftClient.getInstance();
@@ -75,6 +77,8 @@ public class SchematicManager {
         instance.projectDir = getProjectDir(instance.name);
         instance.createOrLoadProject();
         instance.worldLoaded = true;
+        instance.wasRenderEnabled = Configs.Visuals.ENABLE_RENDERING.getBooleanValue();
+        Configs.Visuals.ENABLE_RENDERING.setBooleanValue(false);
 
         LOGGER.info("SchematicManager loaded for world \"{}\" in Creative mode", instance.name);
     }
@@ -87,6 +91,8 @@ public class SchematicManager {
         instance.mode = GameMode.SURVIVAL;
         instance.name = worldId;
         instance.projectDir = getProjectDir(instance.name);
+        instance.wasRenderEnabled = Configs.Visuals.ENABLE_RENDERING.getBooleanValue();
+        Configs.Visuals.ENABLE_RENDERING.setBooleanValue(true);
 
         if (!instance.tryLoadProject()) {
             instance = null;
@@ -242,6 +248,7 @@ public class SchematicManager {
     }
 
     private void persist() {
+        Configs.Visuals.ENABLE_RENDERING.setBooleanValue(this.wasRenderEnabled);
         this.save(true);
         File areaFile = new File(this.projectDir, "area.json");
         if (this.hasEdits) {
