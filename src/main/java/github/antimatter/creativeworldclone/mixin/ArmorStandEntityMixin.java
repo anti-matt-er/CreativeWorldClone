@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ArmorStandEntity.class)
 public abstract class ArmorStandEntityMixin extends Entity {
+    @SuppressWarnings("unused")
     public ArmorStandEntityMixin(EntityType<?> type, World world) {
         super(type, world);
     }

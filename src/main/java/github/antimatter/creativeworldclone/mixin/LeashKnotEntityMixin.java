@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LeashKnotEntity.class)
 public abstract class LeashKnotEntityMixin extends Entity {
+    @SuppressWarnings("unused")
     private LeashKnotEntityMixin(EntityType<?> type, World world) {
         super(type, world);
     }

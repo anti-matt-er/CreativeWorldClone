@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ItemFrameEntity.class)
 public abstract class ItemFrameEntityMixin extends Entity {
+    @SuppressWarnings("unused")
     private ItemFrameEntityMixin(EntityType<?> type, World world) {
         super(type, world);
     }

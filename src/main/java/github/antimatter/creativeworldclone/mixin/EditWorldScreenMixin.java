@@ -25,6 +25,7 @@ public abstract class EditWorldScreenMixin extends Screen {
     @Final
     private BooleanConsumer callback;
 
+    @SuppressWarnings("unused")
     protected EditWorldScreenMixin(Text title) {
         super(title);
     }
