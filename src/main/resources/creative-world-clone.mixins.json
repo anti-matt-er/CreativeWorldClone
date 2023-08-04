@@ -8,15 +8,14 @@
   "client": [
     "ArmorStandEntityMixin",
     "BreakBlockMixin",
-    "ClientPlayNetworkHandlerMixin",
     "EditWorldScreenMixin",
     "EntityMixin",
     "ItemFrameEntityMixin",
     "LeashKnotEntityMixin",
     "LevelStorageSessionMixin",
+    "LitematicWorldLoadListenerMixin",
     "PaintingEntityMixin",
     "PlaceBlockMixin",
-    "ServerPlayNetworkHandlerMixin",
     "WorldListWidgetMixin"
   ],
   "injectors": {

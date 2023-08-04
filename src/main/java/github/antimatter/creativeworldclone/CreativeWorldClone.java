@@ -3,17 +3,14 @@ package github.antimatter.creativeworldclone;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Unique;
-
-import java.util.Objects;
 
 public class CreativeWorldClone implements ModInitializer {
     private static final String ID = "creative-world-clone";
@@ -42,20 +39,11 @@ public class CreativeWorldClone implements ModInitializer {
         return ID;
     }
 
-    @Unique
-    public static Boolean isLitematicaLoaded() {
-        return FabricLoader.getInstance().isModLoaded("litematica");
+    public static void onLitematicaWorldLoad(MinecraftServer server) {
+        SchematicManager.loadWorld(server);
     }
 
-    public static void onWorldLoad() {
-        if (isLitematicaLoaded()) {
-            SchematicManager.loadWorld(Objects.requireNonNull(MinecraftClient.getInstance().getServer()));
-        }
-    }
-
-    public static void onWorldLeave() {
-        if (isLitematicaLoaded()) {
-            SchematicManager.close();
-        }
+    public static void onLitematicaWorldLeave() {
+        SchematicManager.close();
     }
 }
