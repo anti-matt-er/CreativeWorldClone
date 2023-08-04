@@ -54,6 +54,10 @@ public abstract class LevelStorageSessionMixin implements ILevelStorageSessionMi
     public void creativeWorldClone$createCloneIcon() {
         getIconFile().ifPresent(path -> {
             File iconFile = path.toFile();
+            
+            if (!iconFile.exists())
+                return;
+
             File cloneIconFile = path.resolveSibling("clone_icon.png").toFile();
 
             try {
